@@ -162,17 +162,17 @@ export class DatabaseStorage implements IStorage {
 
   // Job operations
   async getJobs(companyId: string, filters?: { date?: string; status?: string; technicianId?: string }): Promise<Job[]> {
-    let query = db.select().from(jobs).where(eq(jobs.companyId, companyId));
+    let conditions = [eq(jobs.companyId, companyId)];
     
     if (filters?.status) {
-      query = query.where(eq(jobs.status, filters.status));
+      conditions.push(eq(jobs.status, filters.status));
     }
     
     if (filters?.technicianId) {
-      query = query.where(eq(jobs.technicianId, filters.technicianId));
+      conditions.push(eq(jobs.technicianId, filters.technicianId));
     }
     
-    return await query.orderBy(desc(jobs.scheduledDate));
+    return await db.select().from(jobs).where(and(...conditions)).orderBy(desc(jobs.scheduledDate));
   }
 
   async getJob(id: number): Promise<Job | undefined> {
@@ -226,18 +226,18 @@ export class DatabaseStorage implements IStorage {
 
   // Invoice operations
   async getInvoices(companyId: string, filters?: { status?: string; overdue?: boolean }): Promise<Invoice[]> {
-    let query = db.select().from(invoices).where(eq(invoices.companyId, companyId));
+    let conditions = [eq(invoices.companyId, companyId)];
     
     if (filters?.status) {
-      query = query.where(eq(invoices.status, filters.status));
+      conditions.push(eq(invoices.status, filters.status));
     }
     
     if (filters?.overdue) {
       const today = new Date();
-      query = query.where(and(eq(invoices.status, "pending"), lte(invoices.dueDate, today.toISOString().split('T')[0])));
+      conditions.push(and(eq(invoices.status, "pending"), lte(invoices.dueDate, today.toISOString().split('T')[0])));
     }
     
-    return await query.orderBy(desc(invoices.createdAt));
+    return await db.select().from(invoices).where(and(...conditions)).orderBy(desc(invoices.createdAt));
   }
 
   async getInvoice(id: number): Promise<Invoice | undefined> {
