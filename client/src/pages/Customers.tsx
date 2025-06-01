@@ -1,14 +1,42 @@
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { AppSidebar } from "@/components/AppSidebar";
-import { MobileNav } from "@/components/MobileNav";
-import { CreateCustomerModal } from "@/components/CreateCustomerModal";
-import { SidebarProvider } from "@/components/ui/sidebar";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Users, Search, Phone, Mail, MapPin } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { 
+  Table, 
+  TableBody, 
+  TableCell, 
+  TableHead, 
+  TableHeader, 
+  TableRow 
+} from "@/components/ui/table";
+import { 
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { 
+  Plus, 
+  Phone, 
+  Mail, 
+  MapPin, 
+  User, 
+  Search, 
+  MoreHorizontal,
+  Edit,
+  Trash2,
+  Eye
+} from "lucide-react";
+import { AppSidebar } from "@/components/AppSidebar";
+import { SidebarProvider, SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
+import { Separator } from "@/components/ui/separator";
+import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from "@/components/ui/breadcrumb";
+import { CreateCustomerModal } from "@/components/CreateCustomerModal";
+import { queryClient } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
 
 interface Customer {
   id: number;
@@ -22,181 +50,307 @@ interface Customer {
 }
 
 export default function Customers() {
-  const [isCustomerModalOpen, setIsCustomerModalOpen] = useState(false);
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
+  const { toast } = useToast();
 
-  const { data: customers, isLoading } = useQuery<Customer[]>({
+  const { data: customers = [], isLoading } = useQuery<Customer[]>({
     queryKey: ["/api/customers"],
-    retry: false,
   });
 
-  const filteredCustomers = customers?.filter(customer => 
+  const deleteCustomerMutation = useMutation({
+    mutationFn: async (customerId: number) => {
+      const response = await fetch(`/api/customers/${customerId}`, {
+        method: "DELETE",
+      });
+      if (!response.ok) {
+        throw new Error("Failed to delete customer");
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/customers"] });
+      toast({
+        title: "Customer deleted",
+        description: "Customer has been successfully removed.",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Delete failed",
+        description: error.message || "Could not delete customer",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const filteredCustomers = customers.filter(customer =>
     customer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    customer.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    customer.phone?.includes(searchTerm)
-  ) || [];
+    customer.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    customer.phone.includes(searchTerm)
+  );
 
-  const getContactMethodColor = (method: string) => {
-    switch (method) {
-      case 'email': return 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300';
-      case 'phone': return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300';
-      case 'text': return 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-300';
-      default: return 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300';
-    }
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric'
+    });
   };
 
-  const getContactIcon = (method: string) => {
-    switch (method) {
-      case 'email': return <Mail className="h-3 w-3" />;
-      case 'phone': return <Phone className="h-3 w-3" />;
-      case 'text': return <Phone className="h-3 w-3" />;
-      default: return <Phone className="h-3 w-3" />;
-    }
+  const getContactMethodBadge = (method: string) => {
+    const variants = {
+      email: { icon: Mail, label: "Email", variant: "default" as const },
+      phone: { icon: Phone, label: "Phone", variant: "secondary" as const },
+      text: { icon: Phone, label: "Text", variant: "outline" as const },
+    };
+    
+    const config = variants[method as keyof typeof variants] || 
+      { icon: User, label: "Any", variant: "outline" as const };
+    
+    const IconComponent = config.icon;
+    
+    return (
+      <Badge variant={config.variant} className="gap-1">
+        <IconComponent className="h-3 w-3" />
+        {config.label}
+      </Badge>
+    );
   };
+
+  if (isLoading) {
+    return (
+      <SidebarProvider>
+        <AppSidebar />
+        <SidebarInset>
+          <header className="flex h-16 shrink-0 items-center gap-2 border-b px-4">
+            <SidebarTrigger className="-ml-1" />
+            <Separator orientation="vertical" className="mr-2 h-4" />
+            <Breadcrumb>
+              <BreadcrumbList>
+                <BreadcrumbItem className="hidden md:block">
+                  <BreadcrumbLink href="/">Dashboard</BreadcrumbLink>
+                </BreadcrumbItem>
+                <BreadcrumbSeparator className="hidden md:block" />
+                <BreadcrumbItem>
+                  <BreadcrumbPage>Customers</BreadcrumbPage>
+                </BreadcrumbItem>
+              </BreadcrumbList>
+            </Breadcrumb>
+          </header>
+          <div className="flex flex-1 flex-col gap-4 p-4">
+            <div className="animate-pulse space-y-4">
+              <div className="h-8 bg-gray-200 rounded w-1/4"></div>
+              <div className="h-4 bg-gray-200 rounded w-1/3"></div>
+              <div className="h-64 bg-gray-200 rounded"></div>
+            </div>
+          </div>
+        </SidebarInset>
+      </SidebarProvider>
+    );
+  }
 
   return (
     <SidebarProvider>
-      <div className="min-h-screen flex w-full">
-        <AppSidebar />
+      <AppSidebar />
+      <SidebarInset>
+        <header className="flex h-16 shrink-0 items-center gap-2 border-b px-4">
+          <SidebarTrigger className="-ml-1" />
+          <Separator orientation="vertical" className="mr-2 h-4" />
+          <Breadcrumb>
+            <BreadcrumbList>
+              <BreadcrumbItem className="hidden md:block">
+                <BreadcrumbLink href="/">Dashboard</BreadcrumbLink>
+              </BreadcrumbItem>
+              <BreadcrumbSeparator className="hidden md:block" />
+              <BreadcrumbItem>
+                <BreadcrumbPage>Customers</BreadcrumbPage>
+              </BreadcrumbItem>
+            </BreadcrumbList>
+          </Breadcrumb>
+        </header>
         
-        <main className="flex-1 flex flex-col">
-          <MobileNav />
-          
-          <div className="flex-1 p-4 lg:p-6 space-y-6">
-            {/* Header */}
-            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-              <div>
-                <h1 className="text-2xl font-bold text-foreground">Customer Management</h1>
-                <p className="text-muted-foreground">Centralize client info & communication</p>
+        <div className="flex flex-1 flex-col gap-6 p-6">
+          {/* Header Section */}
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+            <div>
+              <h1 className="text-3xl font-bold tracking-tight">Customer Management</h1>
+              <p className="text-muted-foreground">
+                Manage customer information, contact details, and service history
+              </p>
+            </div>
+            <div className="flex gap-3">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  placeholder="Search customers..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-9 w-80"
+                />
               </div>
-              
-              <Button onClick={() => setIsCustomerModalOpen(true)}>
-                <Plus className="h-4 w-4 mr-2" />
+              <Button onClick={() => setIsCreateModalOpen(true)}>
+                <Plus className="mr-2 h-4 w-4" />
                 Add Customer
               </Button>
             </div>
+          </div>
 
-            {/* Search */}
+          {/* Stats Cards */}
+          <div className="grid gap-4 md:grid-cols-3">
             <Card>
-              <CardContent className="p-6">
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    placeholder="Search customers by name, email, or phone..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-10"
-                  />
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Total Customers</CardTitle>
+                <User className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{customers.length}</div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Active This Month</CardTitle>
+                <User className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">
+                  {customers.filter(c => {
+                    const monthAgo = new Date();
+                    monthAgo.setMonth(monthAgo.getMonth() - 1);
+                    return new Date(c.createdAt) > monthAgo;
+                  }).length}
                 </div>
               </CardContent>
             </Card>
-
-            {/* Customers List */}
             <Card>
-              <CardHeader>
-                <CardTitle>All Customers ({filteredCustomers.length})</CardTitle>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Email Preferred</CardTitle>
+                <Mail className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                {isLoading ? (
-                  <div className="text-center py-8">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
-                    <p className="text-muted-foreground mt-2">Loading customers...</p>
-                  </div>
-                ) : filteredCustomers.length > 0 ? (
-                  <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                    {filteredCustomers.map(customer => (
-                      <Card key={customer.id} className="hover:shadow-md transition-shadow">
-                        <CardContent className="p-4">
-                          <div className="space-y-3">
-                            <div className="flex items-start justify-between">
-                              <div>
-                                <h3 className="font-medium text-foreground">{customer.name}</h3>
-                                <p className="text-sm text-muted-foreground">
-                                  Customer since {new Date(customer.createdAt).getFullYear()}
-                                </p>
-                              </div>
-                              {customer.preferredContactMethod && (
-                                <Badge className={getContactMethodColor(customer.preferredContactMethod)}>
-                                  <div className="flex items-center gap-1">
-                                    {getContactIcon(customer.preferredContactMethod)}
-                                    <span className="capitalize">{customer.preferredContactMethod}</span>
-                                  </div>
-                                </Badge>
-                              )}
-                            </div>
-
-                            <div className="space-y-2">
-                              {customer.email && (
-                                <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                                  <Mail className="h-4 w-4" />
-                                  <span>{customer.email}</span>
-                                </div>
-                              )}
-                              
-                              {customer.phone && (
-                                <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                                  <Phone className="h-4 w-4" />
-                                  <span>{customer.phone}</span>
-                                </div>
-                              )}
-                              
-                              {customer.address && (
-                                <div className="flex items-start gap-2 text-sm text-muted-foreground">
-                                  <MapPin className="h-4 w-4 mt-0.5 flex-shrink-0" />
-                                  <span className="line-clamp-2">{customer.address}</span>
-                                </div>
-                              )}
-                            </div>
-
-                            {customer.notes && (
-                              <div className="pt-2 border-t">
-                                <p className="text-xs text-muted-foreground line-clamp-2">
-                                  {customer.notes}
-                                </p>
-                              </div>
-                            )}
-
-                            <div className="flex gap-2 pt-2">
-                              <Button variant="outline" size="sm" className="flex-1">
-                                View Details
-                              </Button>
-                              <Button variant="outline" size="sm" className="flex-1">
-                                Create Job
-                              </Button>
-                            </div>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="text-center py-8">
-                    <Users className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                    <p className="text-muted-foreground">
-                      {searchTerm 
-                        ? "No customers match your search" 
-                        : "No customers found"
-                      }
-                    </p>
-                    <Button 
-                      variant="outline" 
-                      className="mt-4"
-                      onClick={() => setIsCustomerModalOpen(true)}
-                    >
-                      Add First Customer
-                    </Button>
-                  </div>
-                )}
+                <div className="text-2xl font-bold">
+                  {customers.filter(c => c.preferredContactMethod === 'email').length}
+                </div>
               </CardContent>
             </Card>
           </div>
-        </main>
-      </div>
 
-      <CreateCustomerModal 
-        open={isCustomerModalOpen} 
-        onOpenChange={setIsCustomerModalOpen}
-      />
+          {/* Customer Table */}
+          {filteredCustomers.length === 0 ? (
+            <Card className="flex flex-col items-center justify-center p-12 text-center">
+              <User className="h-16 w-16 text-muted-foreground/40 mb-4" />
+              <h2 className="text-xl font-semibold mb-2">
+                {searchTerm ? "No customers found" : "No customers yet"}
+              </h2>
+              <p className="text-muted-foreground mb-6 max-w-sm">
+                {searchTerm 
+                  ? "Try adjusting your search terms or clear the filter to see all customers."
+                  : "Start building your customer database by adding your first customer."
+                }
+              </p>
+              {!searchTerm && (
+                <Button onClick={() => setIsCreateModalOpen(true)} size="lg">
+                  <Plus className="mr-2 h-4 w-4" />
+                  Add Your First Customer
+                </Button>
+              )}
+            </Card>
+          ) : (
+            <Card>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Customer</TableHead>
+                    <TableHead>Contact</TableHead>
+                    <TableHead>Preferred Method</TableHead>
+                    <TableHead>Location</TableHead>
+                    <TableHead>Joined</TableHead>
+                    <TableHead className="w-[70px]"></TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filteredCustomers.map((customer) => (
+                    <TableRow key={customer.id} className="hover:bg-muted/50">
+                      <TableCell>
+                        <div>
+                          <div className="font-medium">{customer.name}</div>
+                          {customer.notes && (
+                            <div className="text-sm text-muted-foreground truncate max-w-xs">
+                              {customer.notes}
+                            </div>
+                          )}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="space-y-1">
+                          <div className="flex items-center gap-2 text-sm">
+                            <Mail className="h-3 w-3 text-muted-foreground" />
+                            <span className="truncate max-w-48">{customer.email}</span>
+                          </div>
+                          <div className="flex items-center gap-2 text-sm">
+                            <Phone className="h-3 w-3 text-muted-foreground" />
+                            <span>{customer.phone}</span>
+                          </div>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        {getContactMethodBadge(customer.preferredContactMethod)}
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-start gap-2 max-w-xs">
+                          <MapPin className="h-3 w-3 text-muted-foreground mt-1 flex-shrink-0" />
+                          <span className="text-sm text-muted-foreground truncate">
+                            {customer.address}
+                          </span>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <span className="text-sm text-muted-foreground">
+                          {formatDate(customer.createdAt)}
+                        </span>
+                      </TableCell>
+                      <TableCell>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" className="h-8 w-8 p-0">
+                              <MoreHorizontal className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem>
+                              <Eye className="mr-2 h-4 w-4" />
+                              View Details
+                            </DropdownMenuItem>
+                            <DropdownMenuItem>
+                              <Edit className="mr-2 h-4 w-4" />
+                              Edit Customer
+                            </DropdownMenuItem>
+                            <DropdownMenuItem 
+                              className="text-destructive"
+                              onClick={() => {
+                                if (confirm("Are you sure you want to delete this customer?")) {
+                                  deleteCustomerMutation.mutate(customer.id);
+                                }
+                              }}
+                            >
+                              <Trash2 className="mr-2 h-4 w-4" />
+                              Delete
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </Card>
+          )}
+        </div>
+
+        <CreateCustomerModal 
+          open={isCreateModalOpen} 
+          onOpenChange={setIsCreateModalOpen}
+        />
+      </SidebarInset>
     </SidebarProvider>
   );
 }
