@@ -154,21 +154,15 @@ export async function setupAuth(app: Express) {
       let dbUser = await storage.getUser(user.id);
       
       if (!dbUser) {
-        // Create company first for new Google users
-        const company = await storage.createCompany({
-          id: `company_${user.id}`,
-          name: (user.user_metadata?.full_name || user.email?.split('@')[0] || "User") + " HVAC",
-        });
-
-        // Create user in our database
+        // Create user without company (onboarding will handle company creation)
         dbUser = await storage.upsertUser({
           id: user.id,
           email: user.email!,
           firstName: user.user_metadata?.full_name?.split(' ')[0] || "User",
           lastName: user.user_metadata?.full_name?.split(' ')[1] || "",
-          companyId: company.id,
+          companyId: null,
           role: "admin",
-          isOwner: true,
+          isOwner: false,
         });
       }
 
@@ -203,20 +197,15 @@ export async function setupAuth(app: Express) {
         return res.status(400).json({ message: "Failed to create user" });
       }
 
-      // Create company first
-      const company = await storage.createCompany({
-        id: `company_${authData.user.id}`,
-        name: companyName,
-      });
-
-      // Create user in our database
+      // Create user without company (onboarding will handle company creation)
       const user = await storage.upsertUser({
         id: authData.user.id,
         email: authData.user.email!,
         firstName,
         lastName,
-        companyId: company.id,
-        role: "SoloOwner",
+        companyId: null,
+        role: "admin",
+        isOwner: false,
       });
 
       // Set session

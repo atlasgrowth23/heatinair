@@ -19,13 +19,7 @@ import NotFound from "@/pages/not-found";
 function Router() {
   const { user, isAuthenticated, isLoading } = useAuth();
 
-  // Check if user needs onboarding
-  const { data: userProfile, isLoading: isProfileLoading } = useQuery({
-    queryKey: ["/api/auth/profile"],
-    enabled: isAuthenticated && !!user,
-  });
-
-  if (isLoading || (isAuthenticated && isProfileLoading)) {
+  if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
@@ -41,7 +35,7 @@ function Router() {
           <Route path="/login" component={Login} />
           <Route path="/signup" component={Signup} />
         </>
-      ) : !userProfile?.companyId ? (
+      ) : !user?.companyId ? (
         <Route path="*" component={Onboarding} />
       ) : (
         <>
