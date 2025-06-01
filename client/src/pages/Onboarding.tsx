@@ -18,6 +18,7 @@ interface OnboardingData {
 export default function Onboarding() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
+  const queryClient = useQueryClient();
   const [formData, setFormData] = useState<OnboardingData>({
     companyName: "",
     fullName: "",
