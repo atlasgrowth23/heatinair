@@ -86,18 +86,68 @@ export async function setupAuth(app: Express) {
   // OAuth callback endpoint  
   app.get("/api/auth/callback", async (req, res) => {
     try {
-      const { access_token, refresh_token, expires_in, provider_token } = req.query;
+      // Serve a simple HTML page that extracts token from URL fragment and sends it to the server
+      const html = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <title>Completing sign in...</title>
+        </head>
+        <body>
+          <script>
+            // Extract token from URL fragment
+            const fragment = window.location.hash.substring(1);
+            const params = new URLSearchParams(fragment);
+            const accessToken = params.get('access_token');
+            
+            if (accessToken) {
+              // Send token to server for processing
+              fetch('/api/auth/process-token', {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ access_token: accessToken })
+              }).then(response => {
+                if (response.ok) {
+                  window.location.href = '/';
+                } else {
+                  window.location.href = '/?error=auth_failed';
+                }
+              }).catch(() => {
+                window.location.href = '/?error=auth_failed';
+              });
+            } else {
+              window.location.href = '/?error=no_token';
+            }
+          </script>
+          <p>Completing sign in...</p>
+        </body>
+        </html>
+      `;
+      
+      res.send(html);
+    } catch (error) {
+      console.error("OAuth callback error:", error);
+      res.redirect("/?error=callback_failed");
+    }
+  });
+
+  // Process the OAuth token
+  app.post("/api/auth/process-token", async (req, res) => {
+    try {
+      const { access_token } = req.body;
       
       if (!access_token) {
-        return res.redirect("/?error=no_token");
+        return res.status(400).json({ error: "No access token provided" });
       }
 
       const supabase = getSupabaseClient();
-      const { data: { user }, error } = await supabase.auth.getUser(access_token as string);
+      const { data: { user }, error } = await supabase.auth.getUser(access_token);
 
       if (error || !user) {
-        console.error("OAuth callback error:", error);
-        return res.redirect("/?error=auth_failed");
+        console.error("OAuth token processing error:", error);
+        return res.status(400).json({ error: "Invalid token" });
       }
 
       // Check if user exists in our database
@@ -124,10 +174,10 @@ export async function setupAuth(app: Express) {
       // Set session
       (req.session as any).userId = dbUser.id;
 
-      res.redirect("/");
+      res.json({ success: true });
     } catch (error) {
-      console.error("OAuth callback error:", error);
-      res.redirect("/?error=callback_failed");
+      console.error("OAuth token processing error:", error);
+      res.status(500).json({ error: "Server error" });
     }
   });
 
