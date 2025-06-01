@@ -1,11 +1,9 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Wrench, Calendar, Users, FileText, DollarSign, CheckCircle } from "lucide-react";
+import { Link } from "wouter";
 
 export default function Landing() {
-  const handleLogin = () => {
-    window.location.href = "/api/login";
-  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -18,7 +16,9 @@ export default function Landing() {
             </div>
             <h1 className="text-xl font-bold text-foreground">FieldPro</h1>
           </div>
-          <Button onClick={handleLogin}>Sign In</Button>
+          <Button asChild>
+            <Link href="/login">Sign In</Link>
+          </Button>
         </div>
       </header>
 
@@ -32,8 +32,8 @@ export default function Landing() {
             Complete field service management for HVAC contractors. Schedule jobs, manage customers, 
             track work orders, and handle invoicing - all in one platform.
           </p>
-          <Button size="lg" onClick={handleLogin} className="text-lg px-8 py-3">
-            Get Started Today
+          <Button size="lg" className="text-lg px-8 py-3" asChild>
+            <Link href="/signup">Get Started Today</Link>
           </Button>
         </div>
       </section>
@@ -136,8 +136,8 @@ export default function Landing() {
           <p className="text-xl text-muted-foreground mb-8">
             Join thousands of contractors who trust FieldPro to manage their operations.
           </p>
-          <Button size="lg" onClick={handleLogin} className="text-lg px-8 py-3">
-            Start Free Trial
+          <Button size="lg" className="text-lg px-8 py-3" asChild>
+            <Link href="/signup">Start Free Trial</Link>
           </Button>
         </div>
       </section>
