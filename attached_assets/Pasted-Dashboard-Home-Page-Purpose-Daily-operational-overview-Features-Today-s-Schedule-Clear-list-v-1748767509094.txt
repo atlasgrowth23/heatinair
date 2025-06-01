@@ -1,0 +1,78 @@
+Dashboard (Home Page):
+Purpose: Daily operational overview.
+Features:
+Today's Schedule: Clear list view + map view of appointments.
+Priority Alerts: Urgent jobs (e.g., no heat in winter), missed calls, overdue invoices.
+Tech Status: Real-time location/status (On Route, On Site, Completed, Heading Back).
+Quick Stats: Jobs completed today, revenue generated, outstanding invoices.
+Weather Widget: (Critical for HVAC!).
+Schedule & Dispatch:
+Purpose: The heart of field operations.
+Features:
+Drag & Drop Calendar: Visual scheduling (day/week view).
+Smart Scheduling Engine (MVP): Your core selling point.
+Input: Job Type (Install, Repair, Maintenance, Quote), Estimated Duration, Priority (High/Medium/Low), Location.
+Output: Optimized route sequence for a tech/team based on location proximity, priority, time windows, and tech skill/license requirements. (Uses Google Maps API).
+Manual overrides always possible.
+Job Tagging: Priority flags (e.g., "Urgent - No AC", "Rush Fee"), job types, customer tags ("VIP", "Payment Issue").
+One-Click Dispatch: Assign job to tech + push details to their mobile app.
+Travel Time Estimates: Auto-calculated and visible.
+View Tech Workload: Prevent over/under-scheduling.
+Jobs / Work Orders:
+Purpose: Manage all job details from quote to completion.
+Features:
+Digital Work Orders: Create, send, track.
+Customer History: Link jobs to customer records (previous services, equipment).
+Checklists: Standardized procedures for installs, common repairs, maintenance (ensures quality).
+Parts/Materials Used: Track inventory consumed on-site (mobile app integration crucial).
+Notes & Photos: Techs add notes, photos (before/after, issues found).
+Customer Sign-off: Digital signature capture on-site.
+Convert to Invoice: Seamless transition from completed work order to billing.
+Customer Management (CRM-Lite):
+Purpose: Centralize client info & communication.
+Features:
+Contact Database: Name, address, multiple phones/emails, preferred contact method.
+Equipment Records: Make, model, serial#, install date, service history linked to this record. (Massive value!).
+Service History: All past jobs, invoices, notes.
+Automatic Maintenance Reminders: Based on equipment/service intervals. Send email/SMS.
+Quick Communication Log: Log calls, emails, texts linked to customer.
+Financials & Invoicing:
+Purpose: Simplify money management.
+Features:
+Instant Invoicing: Generate from work order (pre-filled labor, parts). Multiple templates.
+Online Payment Portal: Customers pay invoices via email link.
+Automated Payment Reminders: Reduce AR days.
+Expense Tracking: Techs log job-related expenses (fuel, tolls, misc parts).
+Profitability Snapshot (Per Job): Compare quoted vs. actual labor/materials.
+Basic Reporting: Revenue by job type/tech, outstanding invoices, Mobile App (Technician Focused):
+Purpose: Empower techs in the field. This is non-negotiable.
+Features:
+Daily Schedule View: Optimized route with navigation (Google Maps/Apple Maps).
+Job Details: Customer info, equipment history, notes, checklists.
+Clock In/Out per Job: Track labor time accurately.
+Parts Used: Scan barcodes or select from inventory list.
+Capture Signatures & Payments.
+Add Notes/Photos.
+Mark Job Status: En route, on-site, completed, need parts.
+Basic Communication: Call customer directly from app (logs call).
+Customer Record: Created first. Holds address, equipment history, notes.
+Schedule Tab: Pulls customer address/location to plan jobs. Assigns a tech → creates a Job.
+Job/Work Order Tab: Contains customer info, equipment history, checklists, parts used, tech notes.
+Mobile App: Tech receives the Job, logs time, adds parts used, notes, photos, gets signature → marks job Complete.
+Invoicing Tab: Auto-generates from Completed Job (labor time + parts used + fees).
+Financials: Tracks invoice status (paid/unpaid), shows profit/loss per job (actual labor + parts vs. quoted).
+Customer History: Updated automatically with new job details, invoices, and notes.
+3. Solo Guy vs. Multiple Techs: How to Code It
+DO NOT build solo-first and retrofit teams later. That path leads to major rewrites. Instead:
+Build for Teams from Day 1 (But Simplify for Solos):
+Core Architecture:
+User Roles: Code with roles upfront (Admin, Dispatcher, Technician, SoloOwner).
+SoloOwner = Admin + Dispatcher + Technician permissions combined.
+Data Separation: Every job, customer, invoice is linked to a Company Account.
+Tech Assignment: Every Job has a technician_id field (even if it's always the owner).
+Solo Workflow is a Subset:
+If a company has only 1 user (SoloOwner role):
+Hide "Dispatch" views; show a simple "My Schedule" instead.
+Auto-assign new jobs to the owner.
+Skip "Select Tech" dropdowns.
+NO fundamental logic changes needed. Just simplify the UI/UX for solo.
