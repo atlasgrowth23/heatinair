@@ -83,50 +83,46 @@ export async function setupAuth(app: Express) {
     }
   });
 
-  // OAuth callback endpoint
+  // OAuth callback endpoint  
   app.get("/api/auth/callback", async (req, res) => {
     try {
-      const { code, state } = req.query;
+      const { access_token, refresh_token, expires_in, provider_token } = req.query;
       
-      if (!code) {
-        return res.redirect("/?error=no_code");
+      if (!access_token) {
+        return res.redirect("/?error=no_token");
       }
 
       const supabase = getSupabaseClient();
-      const { data, error } = await supabase.auth.exchangeCodeForSession(code as string);
+      const { data: { user }, error } = await supabase.auth.getUser(access_token as string);
 
-      if (error) {
+      if (error || !user) {
         console.error("OAuth callback error:", error);
         return res.redirect("/?error=auth_failed");
       }
 
-      if (!data.user) {
-        return res.redirect("/?error=no_user");
-      }
-
       // Check if user exists in our database
-      let user = await storage.getUser(data.user.id);
+      let dbUser = await storage.getUser(user.id);
       
-      if (!user) {
+      if (!dbUser) {
         // Create company first for new Google users
         const company = await storage.createCompany({
-          id: `company_${data.user.id}`,
-          name: data.user.email?.split('@')[0] + " HVAC", // Default company name
+          id: `company_${user.id}`,
+          name: (user.user_metadata?.full_name || user.email?.split('@')[0] || "User") + " HVAC",
         });
 
         // Create user in our database
-        user = await storage.upsertUser({
-          id: data.user.id,
-          email: data.user.email!,
-          firstName: data.user.user_metadata?.first_name || data.user.user_metadata?.full_name?.split(' ')[0] || "User",
-          lastName: data.user.user_metadata?.last_name || data.user.user_metadata?.full_name?.split(' ')[1] || "",
+        dbUser = await storage.upsertUser({
+          id: user.id,
+          email: user.email!,
+          firstName: user.user_metadata?.full_name?.split(' ')[0] || "User",
+          lastName: user.user_metadata?.full_name?.split(' ')[1] || "",
           companyId: company.id,
           role: "SoloOwner",
         });
       }
 
       // Set session
-      (req.session as any).userId = user.id;
+      (req.session as any).userId = dbUser.id;
 
       res.redirect("/");
     } catch (error) {
