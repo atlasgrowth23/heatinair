@@ -237,7 +237,8 @@ export class DatabaseStorage implements IStorage {
       conditions.push(and(eq(invoices.status, "pending"), lte(invoices.dueDate, today.toISOString().split('T')[0])));
     }
     
-    return await db.select().from(invoices).where(and(...conditions)).orderBy(desc(invoices.createdAt));
+    const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
+    return await db.select().from(invoices).where(whereClause).orderBy(desc(invoices.createdAt));
   }
 
   async getInvoice(id: number): Promise<Invoice | undefined> {
