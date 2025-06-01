@@ -61,6 +61,80 @@ export async function setupAuth(app: Express) {
   app.set("trust proxy", 1);
   app.use(getSession());
 
+  // Google OAuth endpoint
+  app.post("/api/auth/google", async (req, res) => {
+    try {
+      const supabase = getSupabaseClient();
+      const { data, error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: `${req.protocol}://${req.hostname}/api/auth/callback`,
+        },
+      });
+
+      if (error) {
+        return res.status(400).json({ message: error.message });
+      }
+
+      res.json({ url: data.url });
+    } catch (error) {
+      console.error("Google OAuth error:", error);
+      res.status(500).json({ message: "Failed to initiate Google sign-in" });
+    }
+  });
+
+  // OAuth callback endpoint
+  app.get("/api/auth/callback", async (req, res) => {
+    try {
+      const { code, state } = req.query;
+      
+      if (!code) {
+        return res.redirect("/?error=no_code");
+      }
+
+      const supabase = getSupabaseClient();
+      const { data, error } = await supabase.auth.exchangeCodeForSession(code as string);
+
+      if (error) {
+        console.error("OAuth callback error:", error);
+        return res.redirect("/?error=auth_failed");
+      }
+
+      if (!data.user) {
+        return res.redirect("/?error=no_user");
+      }
+
+      // Check if user exists in our database
+      let user = await storage.getUser(data.user.id);
+      
+      if (!user) {
+        // Create company first for new Google users
+        const company = await storage.createCompany({
+          id: `company_${data.user.id}`,
+          name: data.user.email?.split('@')[0] + " HVAC", // Default company name
+        });
+
+        // Create user in our database
+        user = await storage.upsertUser({
+          id: data.user.id,
+          email: data.user.email!,
+          firstName: data.user.user_metadata?.first_name || data.user.user_metadata?.full_name?.split(' ')[0] || "User",
+          lastName: data.user.user_metadata?.last_name || data.user.user_metadata?.full_name?.split(' ')[1] || "",
+          companyId: company.id,
+          role: "SoloOwner",
+        });
+      }
+
+      // Set session
+      (req.session as any).userId = user.id;
+
+      res.redirect("/");
+    } catch (error) {
+      console.error("OAuth callback error:", error);
+      res.redirect("/?error=callback_failed");
+    }
+  });
+
   // Sign up endpoint
   app.post("/api/auth/signup", async (req, res) => {
     try {
