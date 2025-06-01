@@ -39,27 +39,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/auth/complete-onboarding', isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.id;
-      const { companyName, fullName, isSolo } = req.body;
+      const { teamSize, serviceTypes, primaryChallenge, currentSchedulingMethod } = req.body;
 
-      // Create company
+      // Determine if solo based on team size
+      const isSolo = teamSize === 'solo';
+      
+      // Create company using email as base name
+      const emailName = req.user.email?.split('@')[0] || 'HVAC Company';
       const company = await storage.createCompany({
         id: `company_${userId}`,
-        name: companyName,
+        name: `${emailName} HVAC Services`,
         isSolo: isSolo,
       });
 
-      // Update user with company info
-      const [firstName, ...lastNameParts] = fullName.split(' ');
-      const lastName = lastNameParts.join(' ');
-
+      // Update user with company info and onboarding completion
       const updatedUser = await storage.upsertUser({
         id: userId,
         email: req.user.email,
-        firstName: firstName,
-        lastName: lastName || "",
+        firstName: req.user.firstName || req.user.email?.split('@')[0],
+        lastName: req.user.lastName || "",
         companyId: company.id,
         role: "admin",
         isOwner: true,
+        isSolo: isSolo,
+        hasCompletedOnboarding: true,
       });
 
       res.json({ success: true, user: updatedUser });
