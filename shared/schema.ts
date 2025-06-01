@@ -33,8 +33,10 @@ export const users = pgTable("users", {
   firstName: varchar("first_name"),
   lastName: varchar("last_name"),
   profileImageUrl: varchar("profile_image_url"),
-  role: varchar("role").notNull().default("SoloOwner"), // Admin, Dispatcher, Technician, SoloOwner
-  companyId: varchar("company_id").notNull(),
+  role: varchar("role", { enum: ["admin", "dispatcher", "tech"] }).notNull().default("admin"),
+  isOwner: boolean("is_owner").default(false).notNull(),
+  companyId: varchar("company_id"),
+  currentLocation: varchar("current_location"), // Updated via mobile app
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
@@ -42,6 +44,7 @@ export const users = pgTable("users", {
 export const companies = pgTable("companies", {
   id: varchar("id").primaryKey().notNull(),
   name: varchar("name").notNull(),
+  isSolo: boolean("is_solo").default(true).notNull(),
   address: text("address"),
   phone: varchar("phone"),
   email: varchar("email"),

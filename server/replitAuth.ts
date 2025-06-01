@@ -167,7 +167,8 @@ export async function setupAuth(app: Express) {
           firstName: user.user_metadata?.full_name?.split(' ')[0] || "User",
           lastName: user.user_metadata?.full_name?.split(' ')[1] || "",
           companyId: company.id,
-          role: "SoloOwner",
+          role: "admin",
+          isOwner: true,
         });
       }
 

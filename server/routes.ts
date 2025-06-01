@@ -45,6 +45,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const company = await storage.createCompany({
         id: `company_${userId}`,
         name: companyName,
+        isSolo: isSolo,
       });
 
       // Update user with company info
@@ -57,7 +58,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         firstName: firstName,
         lastName: lastName || "",
         companyId: company.id,
-        role: "SoloOwner",
+        role: "admin",
+        isOwner: true,
       });
 
       res.json({ success: true, user: updatedUser });
