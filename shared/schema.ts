@@ -33,9 +33,10 @@ export const users = pgTable("users", {
   firstName: varchar("first_name"),
   lastName: varchar("last_name"),
   profileImageUrl: varchar("profile_image_url"),
-  role: varchar("role", { enum: ["admin", "dispatcher", "tech"] }).notNull().default("admin"),
+  role: varchar("role", { enum: ["solo_owner", "admin", "dispatcher", "tech"] }).notNull().default("admin"),
   isOwner: boolean("is_owner").default(false).notNull(),
   companyId: varchar("company_id"),
+  hasCompletedOnboarding: boolean("has_completed_onboarding").default(false).notNull(),
   currentLocation: varchar("current_location"), // Updated via mobile app
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),

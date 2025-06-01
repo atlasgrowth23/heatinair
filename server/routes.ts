@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { setupAuth, isAuthenticated } from "./replitAuth";
+import { setupAuth, isAuthenticated } from "./auth";
 import {
   insertCustomerSchema,
   insertJobSchema,
@@ -14,63 +14,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Auth middleware
   await setupAuth(app);
 
-  // Auth routes
-  app.get('/api/auth/user', isAuthenticated, async (req: any, res) => {
-    try {
-      // User is already attached to request by isAuthenticated middleware
-      const user = req.user;
-      res.json(user);
-    } catch (error) {
-      console.error("Error fetching user:", error);
-      res.status(500).json({ message: "Failed to fetch user" });
-    }
-  });
-
-  app.get('/api/auth/profile', isAuthenticated, async (req: any, res) => {
-    try {
-      const user = req.user;
-      res.json(user);
-    } catch (error) {
-      console.error("Error fetching profile:", error);
-      res.status(500).json({ message: "Failed to fetch profile" });
-    }
-  });
-
-  app.post('/api/auth/complete-onboarding', isAuthenticated, async (req: any, res) => {
-    try {
-      const userId = req.user.id;
-      const { teamSize, serviceTypes, primaryChallenge, currentSchedulingMethod } = req.body;
-
-      // Determine if solo based on team size
-      const isSolo = teamSize === 'solo';
-      
-      // Create company using email as base name
-      const emailName = req.user.email?.split('@')[0] || 'HVAC Company';
-      const company = await storage.createCompany({
-        id: `company_${userId}`,
-        name: `${emailName} HVAC Services`,
-        isSolo: isSolo,
-      });
-
-      // Update user with company info and onboarding completion
-      const updatedUser = await storage.upsertUser({
-        id: userId,
-        email: req.user.email,
-        firstName: req.user.firstName || req.user.email?.split('@')[0],
-        lastName: req.user.lastName || "",
-        companyId: company.id,
-        role: "admin",
-        isOwner: true,
-        isSolo: isSolo,
-        hasCompletedOnboarding: true,
-      });
-
-      res.json({ success: true, user: updatedUser });
-    } catch (error) {
-      console.error("Error completing onboarding:", error);
-      res.status(500).json({ message: "Failed to complete onboarding" });
-    }
-  });
 
   // Dashboard routes
   app.get("/api/dashboard/stats", isAuthenticated, async (req: any, res) => {

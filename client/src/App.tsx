@@ -35,7 +35,7 @@ function Router() {
           <Route path="/login" component={Login} />
           <Route path="/signup" component={Signup} />
         </>
-      ) : !user?.companyId ? (
+      ) : !user?.hasCompletedOnboarding ? (
         <Route path="*" component={Onboarding} />
       ) : (
         <>
