@@ -1,26 +1,14 @@
 {
   "builds": [
     {
-      "src": "client/dist/**",
-      "use": "@vercel/static"
-    },
-    {
-      "src": "server/index.ts",
+      "src": "dist/index.js",
       "use": "@vercel/node"
     }
   ],
   "routes": [
     {
-      "src": "/api/(.*)",
-      "dest": "/server/index.ts"
-    },
-    {
-      "src": "/auth/(.*)",
-      "dest": "/server/index.ts"
-    },
-    {
       "src": "/(.*)",
-      "dest": "/client/dist/$1"
+      "dest": "/dist/index.js"
     }
   ],
   "env": {
