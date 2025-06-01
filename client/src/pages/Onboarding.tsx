@@ -73,8 +73,8 @@ export default function Onboarding() {
     onboardingMutation.mutate(formData);
   };
 
-  const firstName = user?.firstName || "there";
-  const companyName = user?.email?.split('@')[0] || "your company";
+  const firstName = (user as any)?.firstName || "there";
+  const companyName = (user as any)?.email?.split('@')[0] || "your company";
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
