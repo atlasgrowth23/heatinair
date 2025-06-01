@@ -1,0 +1,89 @@
+Absolutely, I'll describe the ideal onboarding and post-login flow in clear, actionable terms without code snippets. Here's how it should work in your Replit-based HVAC software:
+
+### Post-Login Flow Description
+
+1. **Immediate Profile Check After Login**:
+- When a user completes Google login, your app should first check if they have an existing company profile in your database
+- Show a simple loading spinner during this check (2-3 seconds max)
+- If no profile exists: Redirect to onboarding flow
+- If profile exists: Redirect to main dashboard
+
+2. **Onboarding Experience**:
+- Display a clean, minimal form with:
+  * Company name input field (required)
+  * User's full name input field (required)
+  * "I'm a solo technician" checkbox (default checked)
+  * "Finish Setup" button
+- When submitted:
+  * Create a new company record in your database
+  * Create a user profile linked to that company
+  * Set role to "admin" (with all permissions)
+  * Store the solo status preference
+  * Redirect to dashboard
+
+3. **First Dashboard Experience**:
+- For solo technicians:
+  * Show "My Schedule" as the default view
+  * Hide all team management UI elements
+  * Auto-assign all new jobs to the logged-in user
+  * Simplify navigation: Only show relevant tabs (Schedule, Jobs, Customers, Invoicing)
+- For companies with multiple users (if unchecked during onboarding):
+  * Show "Dispatch Board" view
+  * Include team management options
+  * Show technician assignment controls
+
+4. **Database Structure**:
+- Companies table: Store company name, creation date, solo status flag
+- Users table: Store user profiles with company relationship and role
+- Jobs table: Always include technician assignment field (even for solos)
+
+5. **Solo Mode Optimization**:
+- Automatically assign new jobs to the owner
+- Hide technician selection dropdowns
+- Simplify dashboard to single-user view
+- Replace "Dispatch" terminology with "My Schedule"
+- Hide team reporting/analytics
+
+6. **Team Mode Preparation**:
+- Keep all team functionality in code but hidden for solo users
+- Use feature flags to toggle team features
+- Maintain role permissions structure
+- Keep technician assignment logic active (even if auto-assigned)
+
+7. **Ongoing User Experience**:
+- After onboarding, always redirect to dashboard
+- Store user preferences in database
+- Allow upgrading from solo to team mode later via settings
+- For existing users: Bypass onboarding completely
+
+### Key Implementation Notes
+
+1. **Timing**:
+- Add onboarding now before building other features
+- Implement the profile check immediately after login
+- Create database tables for companies and profiles first
+
+2. **UI Considerations**:
+- Keep onboarding to a single page/screen
+- Use your existing design system for consistency
+- Make "solo mode" checkbox prominent
+- Provide skip option (though not recommended)
+
+3. **Performance**:
+- Cache company/user data after onboarding
+- Minimize database calls during initial load
+- Make transitions between states smooth
+
+4. **Edge Cases**:
+- Handle duplicate company names gracefully
+- Validate email domains if needed
+- Provide "Edit Company Info" in settings later
+
+5. **Security**:
+- Ensure company data isolation
+- Validate user owns company before operations
+- Implement proper session management
+
+This flow gives you the foundation for both solo and team use cases while keeping the initial experience simple for individual contractors. The key is setting up that company/user relationship immediately after first login.
+
+Would you like me to elaborate on any specific part of this flow or describe how the dashboard should adapt between solo and team modes?

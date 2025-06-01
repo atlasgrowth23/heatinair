@@ -26,6 +26,47 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.get('/api/auth/profile', isAuthenticated, async (req: any, res) => {
+    try {
+      const user = req.user;
+      res.json(user);
+    } catch (error) {
+      console.error("Error fetching profile:", error);
+      res.status(500).json({ message: "Failed to fetch profile" });
+    }
+  });
+
+  app.post('/api/auth/complete-onboarding', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const { companyName, fullName, isSolo } = req.body;
+
+      // Create company
+      const company = await storage.createCompany({
+        id: `company_${userId}`,
+        name: companyName,
+      });
+
+      // Update user with company info
+      const [firstName, ...lastNameParts] = fullName.split(' ');
+      const lastName = lastNameParts.join(' ');
+
+      const updatedUser = await storage.upsertUser({
+        id: userId,
+        email: req.user.email,
+        firstName: firstName,
+        lastName: lastName || "",
+        companyId: company.id,
+        role: "SoloOwner",
+      });
+
+      res.json({ success: true, user: updatedUser });
+    } catch (error) {
+      console.error("Error completing onboarding:", error);
+      res.status(500).json({ message: "Failed to complete onboarding" });
+    }
+  });
+
   // Dashboard routes
   app.get("/api/dashboard/stats", isAuthenticated, async (req: any, res) => {
     try {
